@@ -1,12 +1,13 @@
 # project-air
 
-Download data from 
-
+## Productos MODIS Resumen
 https://lance.modaps.eosdis.nasa.gov/modis/
 
+## Cobertura de nubes
+worldview.earthdata.nasa.gov
 
-worldview.earthdata.nasa.gov	this one is good for checking the clouds
+## Descarga de productos
+search.earthdata.nasa.gov
 
-search.earthdata.nasa.gov		this one is for download
-
+## HEG Reprojection tool
 https://hdfeos.org/software/heg.php
