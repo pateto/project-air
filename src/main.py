@@ -18,34 +18,34 @@ aod.lry = 4.314
 
 #pudb.set_trace()
 
-print '---> init parameters'
+print('---> init parameters')
 aod.init()
 
-print '---> create reprojection tiff files'
+print('---> create reprojection tiff files')
 aod.reprojectFiles()
 
-print '---> clip raster'
+print('---> clip raster')
 aod.clipRaster()
 
-print '---> correct raster'
+print('---> correct raster')
 aod.correctRaster()
 
-print '---> raster to points'
+print('---> raster to points')
 aod.rasterToPoints()
 
-print '---> update points'
+print('---> update points')
 aod.updatePoints()
 
-print '---> set AOD!'
+print( '---> set AOD!')
 aod.calculateAOD()
 
-print '---> create raster'
+print('---> create raster')
 aod.createRaster()
 
-print '---> apply median filter'
+print('---> apply median filter')
 aod.medianFilter()
 
-print '---> create RGB image'
+print('---> create RGB image')
 aod.rgbRaster()
 
-print '---> end!'
+print('---> end!')
