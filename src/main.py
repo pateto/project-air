@@ -1,51 +1,53 @@
-import aod
-import pudb
+from aod import SARA
+import pdb
 
 #-----------------------------------------#
 #                   main
 #-----------------------------------------#
 
-aod.mod = '/home/ws/air/mod/A2017093.1550/'
-aod.img = '/home/ws/air/img/A2017093.1550/'
-aod.ulx = -74.413
-aod.uly = 5.038
-aod.lrx = -73.791
-aod.lry = 4.314
-#aod.ulx = -aod.degrees2decimal(77, 31, 52)
-#aod.uly = aod.degrees2decimal(8, 59, 54)
-#aod.lrx = -aod.degrees2decimal(71, 49, 15)
-#aod.lry = aod.degrees2decimal(3, 29, 44)
+input_folder = 'C:\\AlvaroE\\air\\data'
+workspace_folder = "C:\\AlvaroE\\air\\ws"
 
-#pudb.set_trace()
+ulx = -74.413
+uly = 5.038
+lrx = -73.791
+lry = 4.314
 
-print('---> init parameters')
-aod.init()
+"""
+ulx = -sara.degrees2decimal(77, 31, 52)
+uly = sara.degrees2decimal(8, 59, 54)
+lrx = -sara.degrees2decimal(71, 49, 15)
+lry = sara.degrees2decimal(3, 29, 44)
+"""
+
+sara = SARA(input_folder, workspace_folder)
+sara.setBoundingBox(ulx, uly, lrx, lry)
 
 print('---> create reprojection tiff files')
-aod.reprojectFiles()
+sara.reprojectFiles()
 
 print('---> clip raster')
-aod.clipRaster()
+sara.clipRaster()
 
 print('---> correct raster')
-aod.correctRaster()
+sara.correctRaster()
 
 print('---> raster to points')
-aod.rasterToPoints()
+sara.rasterToPoints()
 
 print('---> update points')
-aod.updatePoints()
+sara.updatePoints()
 
 print( '---> set AOD!')
-aod.calculateAOD()
+sara.calculateAOD()
 
 print('---> create raster')
-aod.createRaster()
+sara.createRaster()
 
 print('---> apply median filter')
-aod.medianFilter()
+sara.medianFilter()
 
 print('---> create RGB image')
-aod.rgbRaster()
+sara.rgbRaster()
 
 print('---> end!')

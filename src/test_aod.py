@@ -22,20 +22,14 @@ class MyTest(unittest.TestCase):
 	def tearDown(self):		
 		shutil.rmtree(workspace_folder)
 
-	def test_swath2tif(self):
-		name = 'MOD02HKM'
-		object_name = 'MODIS_SWATH_Type_L1B'
-		field_name = 'EV_500_RefSB'
-		
+	"""def test_resampling(self):
 		sara = SARA(input_folder, workspace_folder)
-		
-		self.assertTrue(sara.swath2tif(name, object_name, field_name))
+		sara.reprojectFiles()"""
 	
-	#def test_resample(self):		
-	#	self.assertTrue(aod.resample(aod.mod09ga))
-	
-	#def test_convertHDF(self):		
-	#	self.assertTrue(aod.convertHDF())
+	def test_getRadianceScaleFactor(self):
+		# Read GDAL Parameters
+		sara = SARA(input_folder, workspace_folder)		
+		print(sara.getRadianceScaleFactor())
 		
 if __name__ == '__main__':
 	unittest.main()

@@ -13,21 +13,7 @@ class SARA:
 
 		# init parameters
 		self.input_folder = input_folder
-		self.workspace_folder = workspace_folder
-		"""global mod02hkm
-		global mod03
-		global mod35_l2
-		global mod09ga
-		global geolocation
-		global ws
-		global mod02hkm_tiff
-		global mod03solarzenith_tiff
-		global mod03sensorzenith_tiff
-		global mod03solarazimuth_tiff
-		global mod03senzorazimuth_tiff
-		global mod03height_tiff
-		global mod35cloudmask_tiff
-		global mod09ga_tiff"""
+		self.workspace_folder = workspace_folder		
 		
 		# get files
 		files = os.listdir(input_folder)
@@ -40,14 +26,20 @@ class SARA:
 		self.geolocation = self.mod03		
 		
 		# set tiff files
-		self.mod02hkm_tiff = 'MOD02HKM_EV_500_RefSB_b1.tif'
+		self.mod02hkm_tiff = 'MOD02HKM_EV_500_RefSB.tif'
 		self.mod03solarzenith_tiff = 'MOD03_SolarZenith.tif'
 		self.mod03sensorzenith_tiff = 'MOD03_SensorZenith.tif'
 		self.mod03solarazimuth_tiff = 'MOD03_SolarAzimuth.tif'
 		self.mod03senzorazimuth_tiff = 'MOD03_SensorAzimuth.tif'
 		self.mod03height_tiff = 'MOD03_Height.tif'
-		self.mod35cloudmask_tiff = 'MOD35_Cloud_Mask_b0.tif'
+		self.mod35cloudmask_tiff = 'MOD35_Cloud_Mask.tif'
 		self.mod09ga_tiff = 'MOD09GA.tif'
+	
+	def setBoundingBox(self, ulx, uly, lrx, lry):
+		self.ulx = ulx
+		self.uly = uly
+		self.lrx = lrx
+		self.lry = lry
 	
 	# get modis file
 	def getFile(self, name, files):
@@ -60,6 +52,10 @@ class SARA:
 
 	# reproject MOD09GA raster using heg
 	def resample(self, name):
+	
+		if name == 'MOD09GA':
+			input_file = join(self.input_folder, self.mod09ga)
+		output_file = join(self.workspace_folder, name)
 		
 		# define enviromental variables
 		
@@ -72,9 +68,9 @@ class SARA:
 		# define parameters
 		
 		# TODO Check names
-		input_p = 'INPUT_FILENAME = %s\n' % join(mod, mod09ga)
-		output_p = 'OUTPUT_FILENAME = %s.tif\n' % join(ws, name)
-		file = join(ws, 'resample.txt')
+		input_p = 'INPUT_FILENAME = %s\n' % input_file
+		output_p = 'OUTPUT_FILENAME = %s.tif\n' % output_file
+		file = join(self.workspace_folder, 'resample.txt')
 
 		# create parameter file
 		
@@ -92,8 +88,6 @@ class SARA:
 		fo.write('OUTPUT_TYPE = GEO\n')
 		fo.write('END\n')
 		fo.close()
-
-		pdb.set_trace()
 		
 		# call resample (from heg)	
 		call(['resample', '-p', file])
@@ -111,6 +105,10 @@ class SARA:
 		
 		if name == 'MOD02HKM':
 			input_file = join(self.input_folder, self.mod02hkm)
+		elif name == 'MOD03':
+			input_file = join(self.input_folder, self.mod03)
+		elif name == 'MOD35':
+			input_file = join(self.input_folder, self.mod35_l2)
 			
 		
 		# Write input parameters
@@ -130,7 +128,7 @@ class SARA:
 		
 		# define parameters		
 		input_p = 'INPUT_FILENAME = %s\n' % join(self.input_folder, input_file)
-		output_p = 'OUTPUT_FILENAME = %s.tif\n' % join(self.workspace_folder, name)
+		output_p = 'OUTPUT_FILENAME = %s.tif\n' % join(self.workspace_folder, name + '_' + field_name)
 		object_name_p = 'OBJECT_NAME = %s\n' % join(object_name)
 		field_name_p = 'FIELD_NAME = %s|\n' % join(field_name)	
 			
@@ -174,75 +172,67 @@ class SARA:
 		fo.write('END\n')
 		fo.close()
 		
-		pdb.set_trace()
-		
 		# call swath2tif(from heg)	
 		call(['swtif', '-p', parameters_file])
 		
 		return True
-
-	# convert hdf4 to hdf5
-	def convertHDF(self):
-		input = join(mod, mod02hkm)
-		output = join(ws, 'MOD02HKM.hdf')
-		call(['h4toh5', input, output])
-		return True
+	
 
 	# reproject files
-	def reprojectFiles(self):	
+	def reprojectFiles(self):
 
 		# create workspace		
-		if os.path.exists(ws):
-			shutil.rmtree(ws)		
-		os.makedirs(ws)
+		if os.path.exists(self.workspace_folder):
+			shutil.rmtree(self.workspace_folder)		
+		os.makedirs(self.workspace_folder)
 		
 		# get SDS EV_500 (Band 2) from MOD02HKM
-		swathReprojection(mod02hkm, 'MOD02HKM', 'EV_500_RefSB, 0, 1')
+		self.swath2tif('MOD02HKM', 'MODIS_SWATH_Type_L1B', 'EV_500_RefSB')
 
 		# get SDS SolarZenith from MOD03
-		swathReprojection(mod03, 'MOD03', 'SolarZenith')
+		self.swath2tif('MOD03', 'MODIS_Swath_Type_GEO', 'SolarZenith')
 
 		# get SDS SensorZenith from MOD03
-		swathReprojection(mod03, 'MOD03', 'SensorZenith')
+		self.swath2tif('MOD03', 'MODIS_Swath_Type_GEO', 'SensorZenith')
 
 		# get SDS SolarAzimuth from MOD03
-		swathReprojection(mod03, 'MOD03', 'SolarAzimuth')
+		self.swath2tif('MOD03', 'MODIS_Swath_Type_GEO', 'SolarAzimuth')
 
 		# get SDS SensorAzimuth from MOD03
-		swathReprojection(mod03, 'MOD03', 'SensorAzimuth')
+		self.swath2tif('MOD03', 'MODIS_Swath_Type_GEO', 'SensorAzimuth')
 
 		# get SDS Height from MOD03
-		swathReprojection(mod03, 'MOD03', 'Height') # improve!!
+		self.swath2tif('MOD03', 'MODIS_Swath_Type_GEO', 'Height')		
 
 		# get the Cloud Mask (Byte 0) from MOD35
-		swathReprojection(mod35_l2, 'MOD35', 'Cloud_Mask, 1')	
+		self.swath2tif('MOD35', 'mod35', 'Cloud_Mask')	
 
 		# Get the Surface reflectance from MOD09GA
-		hegReprojection('MOD09GA')
+		self.resample('MOD09GA')
 		
-		# Change HDF version 4 to 5 for MOD02HKM
-		convertHDF()
+		return True
 
 	# clip raster
 	def clipRaster(self):
 
 		# define parameters
 
-		input = join(ws, mod02hkm_tiff)
-		output = join(ws, 'mask.tif')		
-		call(['gdal_translate', '-projwin', str(ulx), str(uly), str(lrx), str(lry), '-of', 'GTiff', input, output])
+		input_file = join(self.workspace_folder, self.mod02hkm_tiff)
+		output_file = join(self.workspace_folder, 'mask.tif')
+		
+		call(['gdal_translate', '-projwin', str(self.ulx), str(self.uly), str(self.lrx), str(self.lry), '-of', 'GTiff', input_file, output_file])
 	
 	# correct clipped raster
 	def correctRaster(self):
 
 		# Define data sources
 
-		input = join(ws, 'mask.tif')
-		output = join(ws, 'new_mask.tif')
+		input_file = join(self.workspace_folder, 'mask.tif')
+		output_file = join(self.workspace_folder, 'new_mask.tif')
 
 		# Open raster
 
-		raster = gdal.Open(input)
+		raster = gdal.Open(input_file)
 
 		# Get raster information
 
@@ -254,7 +244,7 @@ class SARA:
 
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
-		dst_raster = driver.Create(output, number_x, number_y, 1, gdal.GDT_Int16)
+		dst_raster = driver.Create(output_file, number_x, number_y, 1, gdal.GDT_Int16)
 		dst_raster.SetGeoTransform(raster.GetGeoTransform())
 		dst_raster.SetProjection(raster.GetProjectionRef())
 
@@ -271,12 +261,12 @@ class SARA:
 
 		# Define data sources
 
-		input = join(ws, 'new_mask.tif')
-		output = join(ws, 'points.shp')
+		input_file = join(self.workspace_folder, 'new_mask.tif')
+		output_file = join(self.workspace_folder, 'points.shp')
 
 		# Setup raster
 
-		raster = gdal.Open(input)
+		raster = gdal.Open(input_file)
 
 		# Get raster information
 
@@ -289,7 +279,7 @@ class SARA:
 		# Setup shapefile
 
 		driver = ogr.GetDriverByName('ESRI Shapefile')
-		shp_file = driver.CreateDataSource(output)
+		shp_file = driver.CreateDataSource(output_file)
 
 		# Define spatial reference
 
@@ -363,8 +353,8 @@ class SARA:
 
 		# Define data sources
 
-		raster_name = join(ws, raster_name)
-		shp_name = join(ws, 'points.shp')
+		raster_name = join(self.workspace_folder, raster_name)
+		shp_name = join(self.workspace_folder, 'points.shp')
 
 		#open points layer
 
@@ -413,19 +403,20 @@ class SARA:
 	
 	# update points shapefile
 	def updatePoints(self):
-		dict = {'refsb_b1' : mod02hkm_tiff,
-				'height' : mod03height_tiff,
-				'snrazimuth' : mod03senzorazimuth_tiff,
-				'snrzenith' : mod03sensorzenith_tiff,
-				'solazimuth' : mod03solarazimuth_tiff,
-				'solzenith' : mod03solarzenith_tiff,
-				'surrefl_b4' : mod09ga_tiff,
-				'cloud_b0' : mod35cloudmask_tiff}
+	
+		points_dict = {'refsb_b1' : self.mod02hkm_tiff,
+				'height' : self.mod03height_tiff,
+				'snrazimuth' : self.mod03senzorazimuth_tiff,
+				'snrzenith' : self.mod03sensorzenith_tiff,
+				'solazimuth' : self.mod03solarazimuth_tiff,
+				'solzenith' : self.mod03solarzenith_tiff,
+				'surrefl_b4' : self.mod09ga_tiff,
+				'cloud_b0' : self.mod35cloudmask_tiff}
 
 		# Loop over the dictionary and set the point values in the shapefile
-		for elem in dict:
-			print(elem, dict[elem])
-			setPointsValues(elem, dict[elem])
+		for elem in points_dict:
+			print(elem, points_dict[elem])
+			self.setPointsValues(elem, points_dict[elem])
 
 	# is cloud free?
 	def isCloudFree(self, cloudMask):
@@ -448,7 +439,7 @@ class SARA:
 		# Reading values
 
 		# TOA Radiance
-		TOARadiance = float(values['refsb_b1']) * TOARadianceScaleFactor
+		TOARadiance = float(values['refsb_b1']) * self.TOARadianceScaleFactor
 
 		# Solar Zenith Angle
 		solarZenithAngle = float(values['solzenith']) * 0.01
@@ -469,7 +460,7 @@ class SARA:
 		surfaceReflectance = float(values['surrefl_b4']) * 0.0001
 
 		# Calculate Top of Atmosphere (TOA) Reflectance
-		TOAReflectance = (math.pi * TOARadiance * math.pow(distance, 2))/(ESUN*math.cos(math.radians(solarZenithAngle)))
+		TOAReflectance = (math.pi * TOARadiance * math.pow(self.distance, 2))/(self.ESUN*math.cos(math.radians(solarZenithAngle)))
 
 		# Calculate cosine solar and sensor zenith angles
 		cosSolarZenithAngle = math.cos(math.radians(solarZenithAngle))
@@ -498,15 +489,15 @@ class SARA:
 		rayleighReflectance = (math.pi * rayleighOpticalDepth * rayleighPhaseFunction) / (cosSolarZenithAngle * cosSensorZenithAngle)
 
 		# Calculate Aerosol scattering phase function
-		asymmetricParameter2 = math.pow(asymmetricParameter,2)
-		aerosolScatteringPhaseFunction = (1-asymmetricParameter2)/math.pow(1+asymmetricParameter2-2*asymmetricParameter*math.cos(math.pi-math.radians(scatteringPhaseAngle)),1.5)
+		asymmetricParameter2 = math.pow(self.asymmetricParameter,2)
+		aerosolScatteringPhaseFunction = (1-asymmetricParameter2)/math.pow(1+asymmetricParameter2-2*self.asymmetricParameter*math.cos(math.pi-math.radians(scatteringPhaseAngle)),1.5)
 
 		# Calculate Aerosol Optical Depth Coefficient
-		AODCoef = cosSolarZenithAngle*cosSensorZenithAngle/(singleScatteringAlbedo*aerosolScatteringPhaseFunction)
+		AODCoef = cosSolarZenithAngle*cosSensorZenithAngle/(self.singleScatteringAlbedo*aerosolScatteringPhaseFunction)
 
 		# Calculate Aerosol Optical Depth!
 		def setAOD(aerosolOpticalDepth):
-			return AODCoef*(TOAReflectance-rayleighReflectance-(math.exp(-(rayleighOpticalDepth+aerosolOpticalDepth)/cosSolarZenithAngle)*math.exp(-(rayleighOpticalDepth+aerosolOpticalDepth)/cosSensorZenithAngle)*surfaceReflectance / (1 - surfaceReflectance * ((0.92*rayleighOpticalDepth+(1-asymmetricParameter)*aerosolOpticalDepth)*math.exp(-(rayleighOpticalDepth+aerosolOpticalDepth)))))) - aerosolOpticalDepth
+			return AODCoef*(TOAReflectance-rayleighReflectance-(math.exp(-(rayleighOpticalDepth+aerosolOpticalDepth)/cosSolarZenithAngle)*math.exp(-(rayleighOpticalDepth+aerosolOpticalDepth)/cosSensorZenithAngle)*surfaceReflectance / (1 - surfaceReflectance * ((0.92*rayleighOpticalDepth+(1-self.asymmetricParameter)*aerosolOpticalDepth)*math.exp(-(rayleighOpticalDepth+aerosolOpticalDepth)))))) - aerosolOpticalDepth
 
 		aerosolOpticalDepth = fsolve(setAOD,1)
 		
@@ -520,42 +511,46 @@ class SARA:
 	# get radiance scale factor
 	def getRadianceScaleFactor(self):
 
-		# convert hdf4 to hdf5
-		file = join(ws, 'MOD02HKM.hdf')
+		# converted hdf4 to hdf5
+		file = join(self.input_folder, self.mod02hkm)
 		
-		# read hdf file and get the value
+		subset_file = 'HDF4_EOS:EOS_SWATH:"%s":MODIS_SWATH_Type_L1B:EV_500_RefSB' % file
+		
+		gdal_file = gdal.Open(subset_file)
+		
+		radiance_scales = gdal_file.GetMetadataItem('radiance_scales')
+		
+		radiance_scale_factor = float(radiance_scales.split(',')[0])
+		
+		return radiance_scale_factor
+		
+		
+		"""# read hdf file and get the value
 		with h5py.File(file, 'r') as hf:		
 			radianceScales = hf.get('MODIS_SWATH_Type_L1B').get('Data Fields').get('EV_500_RefSB').attrs['radiance_scales']	
-			return radianceScales[1]
+			return radianceScales[1]"""
 
 	# calculate AOD
 	def calculateAOD(self):
 		
-		# set parameters
-		global singleScatteringAlbedo
-		global asymmetricParameter
-		global TOARadianceScaleFactor
-		global distance
-		global ESUN
-		
 		# single scattering albedo
-		singleScatteringAlbedo = 0.8170
+		self.singleScatteringAlbedo = 0.8170
 		
 		# asymmetric parameter
-		asymmetricParameter = 0.6889
+		self.asymmetricParameter = 0.6889
 
 		# MOD02HKM ref 500m scale factor
-		TOARadianceScaleFactor = getRadianceScaleFactor()
+		self.TOARadianceScaleFactor = self.getRadianceScaleFactor()
 
 		# Earth sun distance		
-		distance = getEarthSunDistance(mod02hkm[14:17])
+		self.distance = self.getEarthSunDistance(self.mod02hkm[14:17])
 
 		# mean solar exoatmospheric radiance
-		ESUN = 1850
+		self.ESUN = 1850
 
 		#open points layer
 		
-		srcFile = join(ws, 'points.shp')
+		srcFile = join(self.workspace_folder, 'points.shp')
 		driver = ogr.GetDriverByName('ESRI Shapefile')
 		shpFile = driver.Open(srcFile, True)
 		layer = shpFile.GetLayer(0)
@@ -579,8 +574,8 @@ class SARA:
 			cloudMask = int(values['cloud_b0'])
 
 			# Is it cloud free?
-			if isCloudFree(cloudMask):				
-				feature.SetField('aod', makeCalculation(values))				
+			if self.isCloudFree(cloudMask):				
+				feature.SetField('aod', self.makeCalculation(values))				
 			else:            
 				feature.SetField('aod', -9999)
 				
@@ -602,15 +597,15 @@ class SARA:
 
 		# Open the shapefile
 		
-		srcFile = join(ws, 'points.shp')
+		srcFile = join(self.workspace_folder, 'points.shp')
 		driver = ogr.GetDriverByName('ESRI Shapefile')
 		shpFile = driver.Open(srcFile, True)
 		layer = shpFile.GetLayer(0)
 		
 		# Open mask file
 		
-		input = join(ws, 'new_mask.tif')		
-		raster = gdal.Open(input, True)
+		input_file = join(self.workspace_folder, 'new_mask.tif')		
+		raster = gdal.Open(input_file, True)
 
 		# Get raster information
 
@@ -631,10 +626,10 @@ class SARA:
 		
 		# create new raster
 		
-		output = join(img, 'aod.tif')
+		output_file = join(self.workspace_folder, 'aod.tif')
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
-		dst_raster = driver.Create(output, number_x, number_y, 1, gdal.GDT_Float64)
+		dst_raster = driver.Create(output_file, number_x, number_y, 1, gdal.GDT_Float64)
 
 		# Redefine the origin coordinates
 		
@@ -658,8 +653,8 @@ class SARA:
 
 		# Open aod file
 
-		input = join(img, 'aod.tif')
-		raster = gdal.Open(input, True)
+		input_file = join(self.workspace_folder, 'aod.tif')
+		raster = gdal.Open(input_file, True)
 
 		# Get raster information
 
@@ -674,10 +669,10 @@ class SARA:
 
 		# create new raster
 
-		output = join(img, 'aod_m9.tif')
+		output_file = join(self.workspace_folder, 'aod_m9.tif')
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
-		dst_raster = driver.Create(output, number_x, number_y, 1, gdal.GDT_Float64)
+		dst_raster = driver.Create(output_file, number_x, number_y, 1, gdal.GDT_Float64)
 		dst_raster.SetGeoTransform(raster.GetGeoTransform())
 		dst_raster.SetProjection(raster.GetProjectionRef())
 		dst_raster.GetRasterBand(1).WriteArray(new_data)
@@ -695,30 +690,30 @@ class SARA:
 		if x <= .125:
 			return 0
 		elif x <= 0.375:
-			return interpolate(4, x, -.5)
+			return self.interpolate(4, x, -.5)
 		elif x <= .625:
 			return 1.0
 		elif x <= .875:
-			return interpolate(-4, x, 3.5)
+			return self.interpolate(-4, x, 3.5)
 		else:
 			return 0
 
 
 	def red(self, gray):
-		return base(gray - .25)
+		return self.base(gray - .25)
 
 	def green(self, gray):
-		return base(gray)
+		return self.base(gray)
 
 	def blue(self, gray):
-		return base(gray + .25)
+		return self.base(gray + .25)
 	
 	# create RGB raster
 	def rgbRaster(self):
+	
 		# Open aod file
-
-		input = join(img, 'aod_m9.tif')
-		raster = gdal.Open(input, True)
+		input_file = join(self.workspace_folder, 'aod_m9.tif')
+		raster = gdal.Open(input_file, True)
 
 		# Get raster information
 
@@ -743,13 +738,13 @@ class SARA:
 					blue_band[j, i] = 255
 				else:
 					gray = data[j, i] / max
-					red_band[j, i] = red(gray) * 255
-					green_band[j, i] = green(gray) * 255
-					blue_band[j, i] = blue(gray) * 255
+					red_band[j, i] = self.red(gray) * 255
+					green_band[j, i] = self.green(gray) * 255
+					blue_band[j, i] = self.blue(gray) * 255
 
 		# create new raster
 
-		output = join(img, 'aod_m9_rgb.tif')
+		output = join(self.workspace_folder, 'aod_m9_rgb.tif')
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
 		dst_raster = driver.Create(output, number_x, number_y, 3, gdal.GDT_Byte)
