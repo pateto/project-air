@@ -1,6 +1,5 @@
 from osgeo import gdal, ogr, osr
-#import os, shutil, gdal, ogr, osr, numpy, sys, math, h5py
-import os, shutil, numpy, sys, math, h5py
+import os, shutil, numpy, sys, math
 from subprocess import call
 from os.path import join
 from scipy.optimize import fsolve
@@ -34,6 +33,11 @@ class SARA:
 		self.mod03height_tiff = 'MOD03_Height.tif'
 		self.mod35cloudmask_tiff = 'MOD35_Cloud_Mask.tif'
 		self.mod09ga_tiff = 'MOD09GA.tif'
+        
+        # Enviromental variables		
+		os.environ['MRTDATADIR'] = '/HEG/data'
+		os.environ['PGSHOME'] = '/HEG/TOOLKIT_MTD'		
+		os.environ['PATH'] = os.environ['PATH'] + ':/HEG/bin'
 	
 	def setBoundingBox(self, ulx, uly, lrx, lry):
 		self.ulx = ulx
@@ -52,18 +56,10 @@ class SARA:
 
 	# reproject MOD09GA raster using heg
 	def resample(self, name):
-	
+        
 		if name == 'MOD09GA':
 			input_file = join(self.input_folder, self.mod09ga)
 		output_file = join(self.workspace_folder, name)
-		
-		# define enviromental variables
-		
-		os.environ['MRTDATADIR'] = 'c:/AlvaroE/air/HEG/HEG_Win/data'
-		os.environ['PGSHOME'] = 'c:/AlvaroE/air/HEG/HEG_Win/TOOLKIT_MTD'
-		os.environ['MRTBINDIR'] = 'c:/AlvaroE/air/HEG/HEG_Win/bin'   
-		
-		os.environ['PATH'] = os.environ['PATH'] + ';C:/AlvaroE/air/HEG/HEG_Win/bin'
 		
 		# define parameters
 		
@@ -95,13 +91,7 @@ class SARA:
 		return True
 
 	# reproject raster using swath to tif
-	def swath2tif(self, name, object_name, field_name):
-	
-		# define enviromental variables		
-		os.environ['MRTDATADIR'] = 'c:\\AlvaroE\\air\\HEG\\HEG_Win\\data'
-		os.environ['PGSHOME'] = 'c:\\AlvaroE\\air\\HEG\\HEG_Win\\TOOLKIT_MTD'
-		os.environ['MRTBINDIR'] = 'c:\\AlvaroE\\air\\HEG\\HEG_Win\\bin'
-		os.environ['PATH'] = os.environ['PATH'] + ';C:\\AlvaroE\\air\\HEG\\HEG_Win\\bin'		
+	def swath2tif(self, name, object_name, field_name):    
 		
 		if name == 'MOD02HKM':
 			input_file = join(self.input_folder, self.mod02hkm)
@@ -109,14 +99,13 @@ class SARA:
 			input_file = join(self.input_folder, self.mod03)
 		elif name == 'MOD35':
 			input_file = join(self.input_folder, self.mod35_l2)
-			
 		
 		# Write input parameters
 		call(['hegtool', '-h', input_file])
 		
 		# Read input parameters
 		header_parameters = {}
-		header_file = open('HegHdr.hdr')
+		header_file = open('/HEG/HegHdr.hdr')
 		
 		for line in header_file.readlines():
 			if line!='\n':				
@@ -524,11 +513,6 @@ class SARA:
 		
 		return radiance_scale_factor
 		
-		
-		"""# read hdf file and get the value
-		with h5py.File(file, 'r') as hf:		
-			radianceScales = hf.get('MODIS_SWATH_Type_L1B').get('Data Fields').get('EV_500_RefSB').attrs['radiance_scales']	
-			return radianceScales[1]"""
 
 	# calculate AOD
 	def calculateAOD(self):

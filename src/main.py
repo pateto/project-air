@@ -5,8 +5,8 @@ import pdb
 #                   main
 #-----------------------------------------#
 
-input_folder = 'C:\\AlvaroE\\air\\data'
-workspace_folder = "C:\\AlvaroE\\air\\ws"
+input_folder = '/project-air/input'
+workspace_folder = '/project-air/output'
 
 ulx = -74.413
 uly = 5.038
