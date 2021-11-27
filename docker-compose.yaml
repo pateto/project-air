@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  sara:
+    build: .
+    volumes:
+      - D:\\dev\\air\\project-air:/project-air
