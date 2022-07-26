@@ -4,4 +4,4 @@ services:
   sara:
     build: .
     volumes:
-      - D:\\dev\\air\\project-air:/project-air
+      - C:\\AlvaroE\\project-air:/project-air

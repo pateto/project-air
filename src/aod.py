@@ -8,7 +8,7 @@ import pdb
 
 class SARA:
 
-	def __init__(self, input_folder, workspace_folder):
+	def __init__(self, input_folder, workspace_folder, aerosol_type):
 
 		# init parameters
 		self.input_folder = input_folder
@@ -38,6 +38,20 @@ class SARA:
 		os.environ['MRTDATADIR'] = '/HEG/data'
 		os.environ['PGSHOME'] = '/HEG/TOOLKIT_MTD'		
 		os.environ['PATH'] = os.environ['PATH'] + ':/HEG/bin'
+        
+		# set aerosol type (single scattering albedo and asymmetric parameter)
+		if aerosol_type == 'Continental clean':
+			self.singleScatteringAlbedo = 0.972
+			self.asymmetricParameter = 0.709
+		elif aerosol_type == 'Continental average':
+			self.singleScatteringAlbedo = 0.925
+			self.asymmetricParameter = 0.703
+		elif aerosol_type == 'Continental polluted':
+			self.singleScatteringAlbedo = 0.892
+			self.asymmetricParameter = 0.698
+		elif aerosol_type == 'Urban':
+			self.singleScatteringAlbedo = 0.8170
+			self.asymmetricParameter = 0.689
 	
 	def setBoundingBox(self, ulx, uly, lrx, lry):
 		self.ulx = ulx
@@ -516,12 +530,6 @@ class SARA:
 
 	# calculate AOD
 	def calculateAOD(self):
-		
-		# single scattering albedo
-		self.singleScatteringAlbedo = 0.8170
-		
-		# asymmetric parameter
-		self.asymmetricParameter = 0.6889
 
 		# MOD02HKM ref 500m scale factor
 		self.TOARadianceScaleFactor = self.getRadianceScaleFactor()

@@ -1,3 +1,5 @@
 input/
 output/
 src/__pycache__/
+src/HegHdr.hdr
+src/hegtool.log
