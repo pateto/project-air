@@ -8,7 +8,7 @@ import pdb
 
 class SARA:
 
-	def __init__(self, input_folder, workspace_folder, aerosol_type):
+	def __init__(self, input_folder, workspace_folder):
 
 		# init parameters
 		self.input_folder = input_folder
@@ -38,20 +38,7 @@ class SARA:
 		os.environ['MRTDATADIR'] = '/HEG/data'
 		os.environ['PGSHOME'] = '/HEG/TOOLKIT_MTD'		
 		os.environ['PATH'] = os.environ['PATH'] + ':/HEG/bin'
-        
-		# set aerosol type (single scattering albedo and asymmetric parameter)
-		if aerosol_type == 'Continental clean':
-			self.singleScatteringAlbedo = 0.972
-			self.asymmetricParameter = 0.709
-		elif aerosol_type == 'Continental average':
-			self.singleScatteringAlbedo = 0.925
-			self.asymmetricParameter = 0.703
-		elif aerosol_type == 'Continental polluted':
-			self.singleScatteringAlbedo = 0.892
-			self.asymmetricParameter = 0.698
-		elif aerosol_type == 'Urban':
-			self.singleScatteringAlbedo = 0.8170
-			self.asymmetricParameter = 0.689
+		
 	
 	def setBoundingBox(self, ulx, uly, lrx, lry):
 		self.ulx = ulx
@@ -480,7 +467,14 @@ class SARA:
 		scatteringPhaseAngle = math.degrees(math.acos(cosSolarZenithAngle * cosSensorZenithAngle + sinSolarZenithAngle * sinSensorZenithAngle * cosRelativeAzimuthAngles))
 
 		# Calculate ambient pressure with respect to elevation
-		ambientPressure = 1013.25 * math.exp(-0.000118558 * height * 1000)
+		seaLevelStandardAtmosphericPressure = 1013.25 # Pa
+		surfaceGravitationalAcceleration = 9.80665 # m/s2
+		molarMassOfDryAir = 0.0289644 # kg/mol
+		universalGasConstant = 8.31447 # J/(mol K)
+		seaLevelStandardTemperature = 288.15 # K (15°C)
+
+		# ambientPressure = 1013.25 * math.exp(-0.000118558 * height * 1000)
+		ambientPressure = seaLevelStandardAtmosphericPressure * math.exp(-molarMassOfDryAir * surfaceGravitationalAcceleration / (universalGasConstant * seaLevelStandardTemperature) * height * 1000)
 
 		# Calculate Rayleigh Optical Depth
 		rayleighOpticalDepth = (ambientPressure/1013.25)*(0.00864 + height*0.0000065)*11.243728
@@ -529,7 +523,23 @@ class SARA:
 		
 
 	# calculate AOD
-	def calculateAOD(self):
+	def calculateAOD(self, aerosol_type):
+
+		self.aerosol_type = aerosol_type
+
+		# set aerosol type (single scattering albedo and asymmetric parameter)
+		if self.aerosol_type == 'CCL': # Continental clean
+			self.singleScatteringAlbedo = 0.972
+			self.asymmetricParameter = 0.709
+		elif self.aerosol_type == 'CAV': # Continental average
+			self.singleScatteringAlbedo = 0.925
+			self.asymmetricParameter = 0.703
+		elif self.aerosol_type == 'CPO': # Continental polluted
+			self.singleScatteringAlbedo = 0.892
+			self.asymmetricParameter = 0.698
+		elif self.aerosol_type == 'URB': # Urban
+			self.singleScatteringAlbedo = 0.8170
+			self.asymmetricParameter = 0.689
 
 		# MOD02HKM ref 500m scale factor
 		self.TOARadianceScaleFactor = self.getRadianceScaleFactor()
@@ -616,9 +626,11 @@ class SARA:
 		
 		shpFile = None
 		
-		# create new raster
-		
-		output_file = join(self.workspace_folder, 'aod.tif')
+		# create new folder
+		os.makedirs(join(self.workspace_folder, self.aerosol_type))
+
+		# create new raster		
+		output_file = join(self.workspace_folder, self.aerosol_type, 'AOD_' + self.aerosol_type + '.tif')
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
 		dst_raster = driver.Create(output_file, number_x, number_y, 1, gdal.GDT_Float64)
@@ -641,11 +653,11 @@ class SARA:
 		dst_raster = None
 	
 	# create raster
-	def medianFilter(self):
+	def medianFilter(self, size):
 
 		# Open aod file
 
-		input_file = join(self.workspace_folder, 'aod.tif')
+		input_file = join(self.workspace_folder, self.aerosol_type,  'AOD_' + self.aerosol_type + '.tif')
 		raster = gdal.Open(input_file, True)
 
 		# Get raster information
@@ -657,11 +669,11 @@ class SARA:
 
 		# apply filter
 		
-		new_data = filters.median_filter(data, 9)
+		new_data = filters.median_filter(data, size)
 
 		# create new raster
 
-		output_file = join(self.workspace_folder, 'aod_m9.tif')
+		output_file = join(self.workspace_folder, self.aerosol_type, 'AOD_' + self.aerosol_type + '_M' + str(size) + '.tif')
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
 		dst_raster = driver.Create(output_file, number_x, number_y, 1, gdal.GDT_Float64)
@@ -701,10 +713,10 @@ class SARA:
 		return self.base(gray + .25)
 	
 	# create RGB raster
-	def rgbRaster(self):
+	def rgbRaster(self, size):
 	
 		# Open aod file
-		input_file = join(self.workspace_folder, 'aod_m9.tif')
+		input_file = join(self.workspace_folder, self.aerosol_type, 'AOD_' + self.aerosol_type + '_M' + str(size) + '.tif')
 		raster = gdal.Open(input_file, True)
 
 		# Get raster information
@@ -736,7 +748,7 @@ class SARA:
 
 		# create new raster
 
-		output = join(self.workspace_folder, 'aod_m9_rgb.tif')
+		output = join(self.workspace_folder, self.aerosol_type, 'AOD_' + self.aerosol_type + '_M' + str(size) + '_RGB.tif')
 		format = "GTiff"
 		driver = gdal.GetDriverByName(format)
 		dst_raster = driver.Create(output, number_x, number_y, 3, gdal.GDT_Byte)

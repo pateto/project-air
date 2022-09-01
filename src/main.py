@@ -18,9 +18,6 @@ uly = 5.0293
 lrx = -73.7022
 lry = 4.1171
 
-# Aerosol type (Continental clean, Continental average, Continental polluted, Urban)
-aerosol_type = 'Urban'
-
 """
 ulx = -sara.degrees2decimal(77, 31, 52)
 uly = sara.degrees2decimal(8, 59, 54)
@@ -28,7 +25,7 @@ lrx = -sara.degrees2decimal(71, 49, 15)
 lry = sara.degrees2decimal(3, 29, 44)
 """
 
-sara = SARA(input_folder, workspace_folder, aerosol_type)
+sara = SARA(input_folder, workspace_folder)
 sara.setBoundingBox(ulx, uly, lrx, lry)
 
 print('---> create reprojection tiff files')
@@ -46,16 +43,25 @@ sara.rasterToPoints()
 print('---> update points')
 sara.updatePoints()
 
-print( '---> set AOD!')
-sara.calculateAOD()
+# Aerosol types
+# Continental Clean, Continental Average, Continental Polluted, Urban
+models = ['CCL', 'CAV', 'CPO', 'URB']
+# models = ['URB']
 
-print('---> create raster')
-sara.createRaster()
+for model in models:
 
-print('---> apply median filter')
-sara.medianFilter()
+    print( '---> set AOD!')
+    sara.calculateAOD(model)
 
-print('---> create RGB image')
-sara.rgbRaster()
+    print('---> create raster')
+    sara.createRaster()
+
+    for size in range(3,10,2): # window size for the medial filter: 3, 5, 7, 9
+
+        print('---> apply median filter')
+        sara.medianFilter(size)
+
+        # print('---> create RGB image')
+        # sara.rgbRaster(size)
 
 print('---> end!')
