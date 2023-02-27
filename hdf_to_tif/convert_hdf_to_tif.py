@@ -17,7 +17,7 @@ def init():
 
     read_files()
 
-# Lee el nombre de cada archivo
+# Read every hdf filename from a text file
 def read_files():
     file = "list.txt"
     lines = open(file)
@@ -32,7 +32,7 @@ def read_files():
         run_swtif()
         
     
-# crear un archivo de parametros
+# Create parameters file (params_swath) used by HEG
 def create_params(input_filename):
 
     output_filename = input_filename.replace("AEROSOL_3K", "AEROSOL_3K_TIF")
@@ -71,7 +71,7 @@ END
     file.write(params_txt)
     file.close()
 
-# ejecutar swtif
+# run swtif, a binary file from HEG
 def run_swtif():
     # execute command
     cmd = "C:\\heg\\HEG_Win\\bin\\swtif.exe -P C:\\AEROSOL_3K\\script\\params_swath"
