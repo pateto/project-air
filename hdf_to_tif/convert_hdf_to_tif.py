@@ -19,6 +19,7 @@ def init():
 
 # Read every hdf filename from a text file
 def read_files():
+    
     file = "list.txt"
     lines = open(file)
     for filename in lines:
